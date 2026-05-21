@@ -1,0 +1,63 @@
+{
+    "name": "lalalili/subscription-filament",
+    "description": "Filament admin UI layer for subscription-core.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "filament/actions": "^4.0|^5.0",
+        "filament/filament": "^4.0|^5.0",
+        "filament/forms": "^4.0|^5.0",
+        "filament/schemas": "^4.0|^5.0",
+        "filament/tables": "^4.0|^5.0",
+        "lalalili/subscription-core": "@dev",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^3.0|^4.0",
+        "pestphp/pest-plugin-laravel": "^3.0|^4.0",
+        "pestphp/pest-plugin-livewire": "^3.0|^4.0",
+        "laravel/pint": "^1.0",
+        "larastan/larastan": "^3.0"
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../subscription-core",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Lalalili\\SubscriptionFilament\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Lalalili\\SubscriptionFilament\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Lalalili\\SubscriptionFilament\\SubscriptionFilamentServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "scripts": {
+        "test": "pest",
+        "analyse": "phpstan analyse --configuration=phpstan.neon.dist --no-progress",
+        "format": "pint"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    }
+}
