@@ -10,7 +10,7 @@
         "filament/forms": "^4.0|^5.0",
         "filament/schemas": "^4.0|^5.0",
         "filament/tables": "^4.0|^5.0",
-        "lalalili/subscription-core": "@dev",
+        "lalalili/subscription-core": "^0.1.0",
         "spatie/laravel-package-tools": "^1.16"
     },
     "require-dev": {
@@ -26,7 +26,10 @@
             "type": "path",
             "url": "../subscription-core",
             "options": {
-                "symlink": true
+                "symlink": true,
+                "versions": {
+                    "lalalili/subscription-core": "0.1.0"
+                }
             }
         }
     ],
