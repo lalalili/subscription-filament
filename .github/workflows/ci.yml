@@ -7,6 +7,7 @@ on:
       - 'tests/**'
       - 'config/**'
       - 'database/**'
+      - 'resources/**'
       - 'composer.json'
       - 'phpunit.xml.dist'
       - 'phpstan.neon.dist'
@@ -17,6 +18,7 @@ on:
       - 'tests/**'
       - 'config/**'
       - 'database/**'
+      - 'resources/**'
       - 'composer.json'
       - 'phpunit.xml.dist'
       - 'phpstan.neon.dist'
@@ -32,6 +34,14 @@ jobs:
         php: ['8.3', '8.4']
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: subscription-filament
+
+      - name: Checkout subscription-core (sibling path dependency)
+        uses: actions/checkout@v4
+        with:
+          repository: lalalili/subscription-core
+          path: subscription-core
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -40,10 +50,13 @@ jobs:
           coverage: none
 
       - name: Install dependencies
+        working-directory: subscription-filament
         run: composer update --prefer-dist --no-interaction --no-progress
 
       - name: Tests
+        working-directory: subscription-filament
         run: composer test
 
       - name: Static analysis
+        working-directory: subscription-filament
         run: composer analyse

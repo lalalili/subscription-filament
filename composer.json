@@ -31,10 +31,6 @@
                     "lalalili/subscription-core": "0.1.0"
                 }
             }
-        },
-        {
-            "type": "vcs",
-            "url": "https://github.com/lalalili/subscription-core.git"
         }
     ],
     "autoload": {
