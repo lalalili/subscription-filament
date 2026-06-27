@@ -5,14 +5,17 @@ namespace Lalalili\SubscriptionFilament\Filament\Resources\Subscription;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Lalalili\SubscriptionCore\Contracts\SubscriptionCanceller;
 use Lalalili\SubscriptionCore\Enums\SubscriptionStatus;
 use Lalalili\SubscriptionCore\Models\Subscription;
+use Lalalili\SubscriptionCore\Services\SubscriptionService;
 
 class SubscriptionResource extends Resource
 {
@@ -78,6 +81,29 @@ class SubscriptionResource extends Resource
                     ->badge()
                     ->formatStateUsing(fn (bool $state): string => $state ? '內部' : '一般')
                     ->color(fn (bool $state): string => $state ? 'warning' : 'gray'),
+                Tables\Columns\IconColumn::make('is_recurring')
+                    ->label('定期定額')
+                    ->boolean(),
+                Tables\Columns\TextColumn::make('total_success_times')
+                    ->label('已扣款期數')
+                    ->numeric()
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('failed_charge_count')
+                    ->label('連續失敗')
+                    ->numeric()
+                    ->badge()
+                    ->color(fn (int $state): string => $state > 0 ? 'danger' : 'gray')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('gwsr')
+                    ->label('綠界授權單號')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('expires_at')
+                    ->label('下次扣款日')
+                    ->state(fn (Subscription $record): string => $record->getAttribute('is_recurring') && ! $record->getAttribute('is_internal')
+                        ? (string) $record->getAttribute('expires_at')?->format('Y-m-d')
+                        : '—')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('starts_at')
                     ->label('生效日')
                     ->date('Y-m-d')
@@ -101,8 +127,29 @@ class SubscriptionResource extends Resource
                     ->label('內部訂閱')
                     ->toggle()
                     ->query(fn (Builder $query): Builder => $query->where('is_internal', true)),
+                Tables\Filters\Filter::make('is_recurring')
+                    ->label('定期定額')
+                    ->toggle()
+                    ->query(fn (Builder $query): Builder => $query->where('is_recurring', true)),
             ])
             ->recordActions([
+                Actions\Action::make('cancel')
+                    ->label('取消訂閱')
+                    ->icon(Heroicon::OutlinedXCircle)
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('取消訂閱')
+                    ->modalDescription('將停止後續自動扣款（定期定額會連動綠界取消），並把訂閱標記為已取消。')
+                    ->visible(fn (Subscription $record): bool => $record->status === SubscriptionStatus::Active && ! $record->is_internal)
+                    ->action(function (Subscription $record): void {
+                        if (static::cancelSubscription($record)) {
+                            Notification::make()->title('訂閱已取消')->success()->send();
+
+                            return;
+                        }
+
+                        Notification::make()->title('綠界取消定期定額失敗，請稍後再試')->danger()->send();
+                    }),
                 Actions\EditAction::make(),
             ])
             ->toolbarActions([
@@ -115,5 +162,22 @@ class SubscriptionResource extends Resource
         return [
             'index' => Pages\ManageSubscriptions::route('/'),
         ];
+    }
+
+    /**
+     * 取消訂閱：優先使用 host 綁定的 SubscriptionCanceller（含金流連動取消）；
+     * 未綁定時退回僅標記本地取消，避免套件硬耦合特定金流。
+     *
+     * @return bool 取消成功為 true；金流取消失敗為 false
+     */
+    protected static function cancelSubscription(Subscription $subscription): bool
+    {
+        if (app()->bound(SubscriptionCanceller::class)) {
+            return app(SubscriptionCanceller::class)->cancel($subscription);
+        }
+
+        app(SubscriptionService::class)->cancelSubscription($subscription);
+
+        return true;
     }
 }
